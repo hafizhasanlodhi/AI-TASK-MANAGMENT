@@ -125,7 +125,7 @@ function SectionHeader({ title, icon: Icon, action }: { title: string; icon: Luc
           <Icon className="size-4" aria-hidden="true" />
         </span>
         {title}
-      </h2>
+      </h2> 
       {action}
     </div>
   );
