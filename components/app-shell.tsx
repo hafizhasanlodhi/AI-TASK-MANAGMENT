@@ -86,6 +86,7 @@ export function AppShell({ generatedSidebarApps = emptyGeneratedSidebarApps, chi
   const activePage = useMemo(() => getActivePage(pathname), [pathname]);
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarApps, setSidebarApps] = useState(generatedSidebarApps);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const refreshSidebarApps = useCallback(() => {
     let cancelled = false;
@@ -116,6 +117,23 @@ export function AppShell({ generatedSidebarApps = emptyGeneratedSidebarApps, chi
       window.removeEventListener(sidebarAppsRefreshEvent, handleRefresh);
     };
   }, [refreshSidebarApps]);
+
+  const filteredNavGroups = useMemo(() => {
+    if (!searchQuery) return navGroups;
+    return navGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => item.label.toLowerCase().includes(searchQuery.toLowerCase())),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [searchQuery]);
+
+  const filteredSidebarApps = useMemo(() => {
+    if (!searchQuery) return sidebarApps;
+    return sidebarApps.filter((app) => app.appName.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [searchQuery, sidebarApps]);
+
+  const hasSearchResults = searchQuery.length > 0;
 
   function removeGeneratedSidebarApp(appId: number) {
     setSidebarApps((current) => current.filter((app) => app.id !== appId));
@@ -168,12 +186,24 @@ export function AppShell({ generatedSidebarApps = emptyGeneratedSidebarApps, chi
               )}
             >
               <Search className="size-3.5 shrink-0" aria-hidden="true" />
-              <span className="truncate">Search everything</span>
+              <input
+                type="text"
+                placeholder="Search everything"
+                className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
 
-          <nav className="mt-5 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden" aria-label="Primary navigation">
-            {navGroups.map((group) => (
+          <nav className="mt-5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1" aria-label="Primary navigation">
+            {hasSearchResults && (filteredNavGroups.length > 0 || filteredSidebarApps.length > 0) && (
+              <div className="mb-2 px-2.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                Search Results
+              </div>
+            )}
+
+            {filteredNavGroups.map((group) => (
               <div key={group.label} className="space-y-1">
                 <p
                   className={cn(
@@ -227,7 +257,7 @@ export function AppShell({ generatedSidebarApps = emptyGeneratedSidebarApps, chi
                 })}
               </div>
             ))}
-            {sidebarApps.length > 0 && (
+            {filteredSidebarApps.length > 0 && (
               <div className="space-y-1">
                 <p
                   className={cn(
@@ -236,9 +266,9 @@ export function AppShell({ generatedSidebarApps = emptyGeneratedSidebarApps, chi
                     "max-sm:sr-only",
                   )}
                 >
-                  Generated
+                  {hasSearchResults ? "Matching Apps" : "Generated"}
                 </p>
-                {sidebarApps.map((app) => {
+                {filteredSidebarApps.map((app) => {
                   const Icon = getGeneratedAppIcon(app.icon);
                   return (
                     <div key={app.id} className="group flex items-center">
@@ -279,6 +309,11 @@ export function AppShell({ generatedSidebarApps = emptyGeneratedSidebarApps, chi
                     </div>
                   );
                 })}
+              </div>
+            )}
+            {hasSearchResults && filteredNavGroups.length === 0 && filteredSidebarApps.length === 0 && (
+              <div className="px-2.5 py-4 text-center">
+                <p className="text-xs text-muted-foreground">No results found for "{searchQuery}"</p>
               </div>
             )}
           </nav>

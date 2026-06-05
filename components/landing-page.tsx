@@ -53,7 +53,7 @@ function NavBar() {
           <span style={{ width: 34, height: 34, borderRadius: 9, background: amber, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Sparkles size={16} color="#fff" />
           </span>
-          <span style={{ fontFamily: serif, fontSize: 17, fontWeight: 700, color: dark, letterSpacing: "-0.01em" }}>Flowbase</span>
+          <span style={{ fontFamily: serif, fontSize: 17, fontWeight: 700, color: dark, letterSpacing: "-0.01em" }}>FlowBased</span>
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           {["Features", "Pricing"].map((l) => (
@@ -81,7 +81,7 @@ function Hero() {
             One workspace.<br /><span style={{ color: amber }}>Every way you think.</span>
           </h1>
           <p style={{ fontSize: 17, lineHeight: 1.7, color: muted, margin: "0 0 36px", maxWidth: 440 }}>
-            Flowbase combines notes, whiteboards, kanban boards, calendar planning, and AI assistance in one calm, modern workspace.
+            FlowBased combines notes, whiteboards, kanban boards, calendar planning, and AI assistance in one calm, modern workspace.
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <a href="#pricing" style={{ background: dark, color: "#fff", fontSize: 15, fontWeight: 600, padding: "13px 28px", borderRadius: 10, textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
@@ -257,14 +257,14 @@ function Footer() {
           <span style={{ width: 30, height: 30, borderRadius: 8, background: amber, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Sparkles size={13} color="#fff" />
           </span>
-          <span style={{ fontFamily: serif, fontSize: 15, fontWeight: 700, color: dark }}>Flowbase</span>
+          <span style={{ fontFamily: serif, fontSize: 15, fontWeight: 700, color: dark }}>FlowBased</span>
         </div>
         <div style={{ display: "flex", gap: 24 }}>
           {["Features", "Pricing", "Privacy", "Terms"].map((l) => (
             <a key={l} href="#" style={{ fontSize: 13, color: faint, textDecoration: "none" }}>{l}</a>
           ))}
         </div>
-        <p style={{ fontSize: 12, color: "#a09080", margin: 0 }}>© 2026 Flowbase. All rights reserved.</p>
+        <p style={{ fontSize: 12, color: "#a09080", margin: 0 }}>© 2026 FlowBased. All rights reserved.</p>
       </div>
     </footer>
   );

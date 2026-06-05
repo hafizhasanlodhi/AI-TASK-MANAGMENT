@@ -2,6 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import { CheckoutButton, SubscriptionDetailsButton, useSubscription } from "@clerk/nextjs/experimental";
+import { cn } from "@/lib/utils";
 import {
   Bell,
   BookOpen,
@@ -48,7 +49,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CategoryScope, UserCategoryDTO } from "@/lib/user-preferences";
-import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/theme-provider";
 
 type SettingsSection = "profile" | "subscription" | "categories" | "ai" | "preferences" | "privacy";
 
@@ -102,6 +103,7 @@ export function SettingsWorkspace({ initialData }: { initialData: SettingsPageDa
   const { user } = useUser();
   const clerk = useClerk();
   const subscription = useSubscription();
+  const { setTheme } = useTheme();
   const [active, setActive] = useState<SettingsSection>("profile");
   const [settings, setSettings] = useState(initialData.settings);
   const [categories, setCategories] = useState(initialData.categories);
@@ -123,6 +125,11 @@ export function SettingsWorkspace({ initialData }: { initialData: SettingsPageDa
   function saveSettings(input: Partial<UserSettingsDTO>) {
     const optimistic = { ...settings, ...input };
     setSettings(optimistic);
+
+    if (input.theme) {
+      setTheme(input.theme as any);
+    }
+
     setMessage("");
     setError("");
     startTransition(async () => {

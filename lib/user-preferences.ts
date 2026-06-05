@@ -195,3 +195,24 @@ export async function exportCurrentUserData() {
     generatedApps: apps,
   };
 }
+
+export async function getUserTheme(): Promise<string> {
+  try {
+    const session = await auth();
+    if (!session.userId) return "system";
+
+    const databaseUser = await db.query.users.findFirst({
+      where: eq(users.clerkId, session.userId),
+    });
+
+    if (!databaseUser) return "system";
+
+    const settings = await db.query.userSettings.findFirst({
+      where: eq(userSettings.userId, databaseUser.id),
+    });
+
+    return settings?.theme ?? "system";
+  } catch {
+    return "system";
+  }
+}
