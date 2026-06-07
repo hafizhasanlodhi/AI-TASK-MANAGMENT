@@ -5,7 +5,11 @@ import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db, generatedApps } from "@/db";
-import { assertAiFeatureEnabled, isCurrentUserPro, recordAiAction } from "@/lib/user-preferences";
+import {
+  assertAiFeatureEnabled,
+  isCurrentUserPro,
+  recordAiAction,
+} from "@/lib/user-preferences";
 import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 
 const GEMINI_MODEL = "gemini-3.1-flash-lite";
@@ -30,7 +34,17 @@ const allowedIcons = [
   "Utensils",
 ] as const;
 
-const componentTypes = ["stats", "list", "table", "form", "progress", "checklist", "buttons", "tags", "chart"] as const;
+const componentTypes = [
+  "stats",
+  "list",
+  "table",
+  "form",
+  "progress",
+  "checklist",
+  "buttons",
+  "tags",
+  "chart",
+] as const;
 
 export type GeneratedComponentType = (typeof componentTypes)[number];
 
@@ -39,7 +53,12 @@ export type GeneratedComponent = {
   type: GeneratedComponentType;
   title: string;
   description?: string;
-  fields?: { label: string; type?: string; placeholder?: string; value?: string }[];
+  fields?: {
+    label: string;
+    type?: string;
+    placeholder?: string;
+    value?: string;
+  }[];
   items?: Record<string, unknown>[];
   columns?: string[];
   rows?: Record<string, unknown>[];
@@ -112,7 +131,10 @@ function cleanAppState(value: unknown): GeneratedAppState {
   const components = asRecord(data.components);
   const nextComponents: Record<string, GeneratedComponentState> = {};
 
-  for (const [componentId, rawState] of Object.entries(components).slice(0, 80)) {
+  for (const [componentId, rawState] of Object.entries(components).slice(
+    0,
+    80,
+  )) {
     const record = asRecord(rawState);
     nextComponents[componentId.slice(0, 80)] = {
       items: cleanRecordArray(record.items, [], 40),
@@ -120,11 +142,19 @@ function cleanAppState(value: unknown): GeneratedAppState {
       labels: cleanStringArray(record.labels, [], 40),
       checked: Array.isArray(record.checked)
         ? record.checked
-            .map((item) => (typeof item === "number" && Number.isInteger(item) ? item : null))
-            .filter((item): item is number => item !== null && item >= 0 && item <= 200)
+            .map((item) =>
+              typeof item === "number" && Number.isInteger(item) ? item : null,
+            )
+            .filter(
+              (item): item is number =>
+                item !== null && item >= 0 && item <= 200,
+            )
             .slice(0, 200)
         : [],
-      value: typeof record.value === "number" && Number.isFinite(record.value) ? Math.max(0, Math.min(100, record.value)) : undefined,
+      value:
+        typeof record.value === "number" && Number.isFinite(record.value)
+          ? Math.max(0, Math.min(100, record.value))
+          : undefined,
       formValues: Object.fromEntries(
         Object.entries(asRecord(record.formValues))
           .slice(0, 20)
@@ -133,7 +163,12 @@ function cleanAppState(value: unknown): GeneratedAppState {
       clicks: Object.fromEntries(
         Object.entries(asRecord(record.clicks))
           .slice(0, 20)
-          .map(([key, item]) => [key.slice(0, 80), typeof item === "number" && Number.isFinite(item) ? Math.max(0, Math.min(999, item)) : 0]),
+          .map(([key, item]) => [
+            key.slice(0, 80),
+            typeof item === "number" && Number.isFinite(item)
+              ? Math.max(0, Math.min(999, item))
+              : 0,
+          ]),
       ),
     };
   }
@@ -142,7 +177,8 @@ function cleanAppState(value: unknown): GeneratedAppState {
 }
 
 function cleanText(value: unknown, fallback: string, maxLength = 140) {
-  const text = typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+  const text =
+    typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
   return (text || fallback).slice(0, maxLength);
 }
 
@@ -153,27 +189,43 @@ function cleanColor(value: unknown) {
 
 function cleanIcon(value: unknown) {
   const icon = cleanText(value, "LayoutTemplate", 40);
-  return allowedIcons.includes(icon as (typeof allowedIcons)[number]) ? icon : "LayoutTemplate";
+  return allowedIcons.includes(icon as (typeof allowedIcons)[number])
+    ? icon
+    : "LayoutTemplate";
 }
 
 function cleanComponentType(value: unknown): GeneratedComponentType {
   const type = typeof value === "string" ? value.trim().toLowerCase() : "";
-  if (type === "stats cards" || type === "stat" || type === "stats-card") return "stats";
+  if (type === "stats cards" || type === "stat" || type === "stats-card")
+    return "stats";
   if (type === "progress bar" || type === "progress-bar") return "progress";
   if (type === "checklists") return "checklist";
   if (type === "button" || type === "actions") return "buttons";
-  if (type === "chart placeholder" || type === "chart-placeholder") return "chart";
-  return componentTypes.includes(type as GeneratedComponentType) ? (type as GeneratedComponentType) : "list";
+  if (type === "chart placeholder" || type === "chart-placeholder")
+    return "chart";
+  return componentTypes.includes(type as GeneratedComponentType)
+    ? (type as GeneratedComponentType)
+    : "list";
 }
 
 function cleanStringArray(value: unknown, fallback: string[], maxItems = 6) {
   const source = Array.isArray(value) ? value : fallback;
-  return source.map((item) => cleanText(item, "", 60)).filter(Boolean).slice(0, maxItems);
+  return source
+    .map((item) => cleanText(item, "", 60))
+    .filter(Boolean)
+    .slice(0, maxItems);
 }
 
-function cleanRecordArray(value: unknown, fallback: Record<string, unknown>[], maxItems = 8) {
+function cleanRecordArray(
+  value: unknown,
+  fallback: Record<string, unknown>[],
+  maxItems = 8,
+) {
   const source = Array.isArray(value) ? value : fallback;
-  return source.map(asRecord).filter((item) => Object.keys(item).length > 0).slice(0, maxItems);
+  return source
+    .map(asRecord)
+    .filter((item) => Object.keys(item).length > 0)
+    .slice(0, maxItems);
 }
 
 function cleanActions(value: unknown) {
@@ -216,35 +268,72 @@ function defaultComponents(appName: string): GeneratedComponent[] {
 
 function cleanComponent(value: unknown, index: number): GeneratedComponent {
   const record = asRecord(value);
-  const type = cleanComponentType(record.type ?? record.componentType ?? record.blockType);
-  const title = cleanText(record.title ?? record.name, `${type[0].toUpperCase()}${type.slice(1)} block`, 80);
-  const columns = cleanStringArray(record.columns, ["Item", "Status", "Notes"], 5);
+  const type = cleanComponentType(
+    record.type ?? record.componentType ?? record.blockType,
+  );
+  const title = cleanText(
+    record.title ?? record.name,
+    `${type[0].toUpperCase()}${type.slice(1)} block`,
+    80,
+  );
+  const columns = cleanStringArray(
+    record.columns,
+    ["Item", "Status", "Notes"],
+    5,
+  );
 
   return {
     id: cleanText(record.id, `component-${index + 1}`, 48),
     type,
     title,
-    description: typeof record.description === "string" ? cleanText(record.description, "", 160) : undefined,
+    description:
+      typeof record.description === "string"
+        ? cleanText(record.description, "", 160)
+        : undefined,
     fields: cleanRecordArray(record.fields, [], 8).map((field) => ({
       label: cleanText(field.label ?? field.name, "Field", 48),
       type: cleanText(field.type, "text", 24),
-      placeholder: typeof field.placeholder === "string" ? cleanText(field.placeholder, "", 80) : undefined,
-      value: typeof field.value === "string" ? cleanText(field.value, "", 80) : undefined,
+      placeholder:
+        typeof field.placeholder === "string"
+          ? cleanText(field.placeholder, "", 80)
+          : undefined,
+      value:
+        typeof field.value === "string"
+          ? cleanText(field.value, "", 80)
+          : undefined,
     })),
-    items: cleanRecordArray(record.items ?? record.cards ?? record.stats, [], 8),
+    items: cleanRecordArray(
+      record.items ?? record.cards ?? record.stats,
+      [],
+      8,
+    ),
     columns,
     rows: cleanRecordArray(record.rows, [], 8),
     actions: cleanActions(record.actions ?? record.buttons),
-    value: typeof record.value === "number" && Number.isFinite(record.value) ? Math.max(0, Math.min(100, record.value)) : undefined,
-    max: typeof record.max === "number" && Number.isFinite(record.max) ? Math.max(1, record.max) : undefined,
+    value:
+      typeof record.value === "number" && Number.isFinite(record.value)
+        ? Math.max(0, Math.min(100, record.value))
+        : undefined,
+    max:
+      typeof record.max === "number" && Number.isFinite(record.max)
+        ? Math.max(1, record.max)
+        : undefined,
     labels: cleanStringArray(record.labels ?? record.tags, [], 10),
   };
 }
 
 function cleanDefinition(input: unknown): GeneratedAppDefinition {
   const data = asRecord(input);
-  const appName = cleanText(data.appName ?? data.name ?? data.title, "Generated App", 80);
-  const description = cleanText(data.description, "A focused single-page productivity template.", 180);
+  const appName = cleanText(
+    data.appName ?? data.name ?? data.title,
+    "Generated App",
+    80,
+  );
+  const description = cleanText(
+    data.description,
+    "A focused single-page productivity template.",
+    180,
+  );
   const icon = cleanIcon(data.icon);
   const color = cleanColor(data.color ?? data.themeColor ?? data.theme_color);
 
@@ -252,20 +341,36 @@ function cleanDefinition(input: unknown): GeneratedAppDefinition {
   const sections = rawSections
     .map((section, sectionIndex): GeneratedSection | null => {
       const record = asRecord(section);
-      const rawComponents = Array.isArray(record.components) ? record.components : Array.isArray(record.blocks) ? record.blocks : [];
-      const components = rawComponents.map(cleanComponent).filter(Boolean).slice(0, 6);
+      const rawComponents = Array.isArray(record.components)
+        ? record.components
+        : Array.isArray(record.blocks)
+          ? record.blocks
+          : [];
+      const components = rawComponents
+        .map(cleanComponent)
+        .filter(Boolean)
+        .slice(0, 6);
       if (!components.length) return null;
       return {
         id: cleanText(record.id, `section-${sectionIndex + 1}`, 48),
-        title: cleanText(record.title ?? record.name, sectionIndex === 0 ? "Overview" : "Workspace", 80),
-        description: typeof record.description === "string" ? cleanText(record.description, "", 160) : undefined,
+        title: cleanText(
+          record.title ?? record.name,
+          sectionIndex === 0 ? "Overview" : "Workspace",
+          80,
+        ),
+        description:
+          typeof record.description === "string"
+            ? cleanText(record.description, "", 160)
+            : undefined,
         components,
       };
     })
     .filter((section): section is GeneratedSection => Boolean(section))
     .slice(0, 5);
 
-  const topLevelComponents = Array.isArray(data.components) ? data.components.map(cleanComponent).slice(0, 6) : [];
+  const topLevelComponents = Array.isArray(data.components)
+    ? data.components.map(cleanComponent).slice(0, 6)
+    : [];
   const finalSections =
     sections.length > 0
       ? sections
@@ -274,7 +379,10 @@ function cleanDefinition(input: unknown): GeneratedAppDefinition {
             id: "section-1",
             title: "Overview",
             description,
-            components: topLevelComponents.length > 0 ? topLevelComponents : defaultComponents(appName),
+            components:
+              topLevelComponents.length > 0
+                ? topLevelComponents
+                : defaultComponents(appName),
           },
         ];
 
@@ -291,7 +399,11 @@ function cleanDefinition(input: unknown): GeneratedAppDefinition {
 }
 
 function parseJsonResponse(text: string) {
-  const trimmed = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+  const trimmed = text
+    .trim()
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/i, "")
+    .trim();
   const start = trimmed.indexOf("{");
   const end = trimmed.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
@@ -349,10 +461,15 @@ export async function listGeneratedApps() {
   return apps.map(toDTO);
 }
 
-export async function listSidebarGeneratedApps(): Promise<GeneratedSidebarAppDTO[]> {
+export async function listSidebarGeneratedApps(): Promise<
+  GeneratedSidebarAppDTO[]
+> {
   const userId = await getCurrentDatabaseUserId();
   const apps = await db.query.generatedApps.findMany({
-    where: and(eq(generatedApps.userId, userId), eq(generatedApps.isInSidebar, true)),
+    where: and(
+      eq(generatedApps.userId, userId),
+      eq(generatedApps.isInSidebar, true),
+    ),
     orderBy: [desc(generatedApps.updatedAt), desc(generatedApps.id)],
     limit: SIDEBAR_LIMIT,
   });
@@ -371,7 +488,8 @@ export async function getGeneratedApp(appId: number) {
 }
 
 export async function generateGeneratedApp(prompt: string) {
-  if (!(await isCurrentUserPro())) {
+  // Allow in development mode, require Pro in production
+  if (process.env.NODE_ENV === "production" && !(await isCurrentUserPro())) {
     throw new Error("AI Template Builder is available on the Pro plan.");
   }
   await assertAiFeatureEnabled("aiTemplateBuilderEnabled");
@@ -384,7 +502,9 @@ export async function generateGeneratedApp(prompt: string) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("Gemini is not configured. Add GEMINI_API_KEY to enable AI Template Builder.");
+    throw new Error(
+      "Gemini is not configured. Add GEMINI_API_KEY to enable AI Template Builder.",
+    );
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -424,13 +544,19 @@ export async function generateGeneratedApp(prompt: string) {
   return toDTO(app);
 }
 
-export async function toggleGeneratedAppSidebar(appId: number, shouldShow: boolean) {
+export async function toggleGeneratedAppSidebar(
+  appId: number,
+  shouldShow: boolean,
+) {
   const userId = await getCurrentDatabaseUserId();
   const app = await assertGeneratedAppAccess(appId, userId);
 
   if (shouldShow && !app.isInSidebar) {
     const existing = await db.query.generatedApps.findMany({
-      where: and(eq(generatedApps.userId, userId), eq(generatedApps.isInSidebar, true)),
+      where: and(
+        eq(generatedApps.userId, userId),
+        eq(generatedApps.isInSidebar, true),
+      ),
       columns: { id: true },
     });
 
@@ -450,7 +576,10 @@ export async function toggleGeneratedAppSidebar(appId: number, shouldShow: boole
   return toDTO(updated);
 }
 
-export async function updateGeneratedAppState(appId: number, state: GeneratedAppState) {
+export async function updateGeneratedAppState(
+  appId: number,
+  state: GeneratedAppState,
+) {
   const userId = await getCurrentDatabaseUserId();
   await assertGeneratedAppAccess(appId, userId);
   const nextState = cleanAppState(state);
@@ -473,7 +602,9 @@ export async function updateGeneratedAppState(appId: number, state: GeneratedApp
 export async function deleteGeneratedApp(appId: number) {
   const userId = await getCurrentDatabaseUserId();
   await assertGeneratedAppAccess(appId, userId);
-  await db.delete(generatedApps).where(and(eq(generatedApps.id, appId), eq(generatedApps.userId, userId)));
+  await db
+    .delete(generatedApps)
+    .where(and(eq(generatedApps.id, appId), eq(generatedApps.userId, userId)));
 
   revalidatePath("/ai-template-builder");
   revalidatePath(`/ai-template-builder/${appId}`);

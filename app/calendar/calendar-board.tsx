@@ -60,12 +60,19 @@ function startOfWeek(date: Date) {
 function addMonths(date: Date, months: number) {
   return new Date(date.getFullYear(), date.getMonth() + months, 1);
 }
-
 function getMonthDays(anchor: Date) {
   const start = startOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-  return Array.from({ length: 42 }, (_, index) => addDays(start, index));
-}
+  
+  // Mahine ka aakhri din nikalte hain
+  const lastDayOfMonth = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+  
+  const diffTime = Math.abs(lastDayOfMonth.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  const totalDays = diffDays < 35 ? 35 : 42;
 
+  return Array.from({ length: totalDays }, (_, index) => addDays(start, index));
+}
 function getWeekDays(anchor: Date) {
   const start = startOfWeek(anchor);
   return Array.from({ length: 7 }, (_, index) => addDays(start, index));
@@ -311,6 +318,65 @@ export function CalendarBoard({ initialItems, categories }: { initialItems: Cale
           </div>
           <div className="grid grid-cols-7">
             {visibleDays.map((day) => {
+  const key = dateKey(day);
+  const dayItems = sortItems(itemsByDate[key] || []);
+  const isToday = key === dateKey(today);
+  const inCurrentMonth = day.getMonth() === anchorDate.getMonth();
+
+  // 👇 AGAR MONTH VIEW HAI AUR DIN CURRENT MONTH KA NAHI HAI, TO KHALI COLUMN DIKHAO
+  if (view === "month" && !inCurrentMonth) {
+    return (
+      <div
+        key={key}
+        className="min-h-32 min-w-0 border-b border-r border-border bg-background/30 sm:min-h-36"
+      >
+      </div>
+    );
+  }
+
+  // 👇 BAWARTS: APKA ASLI CODE (Jo sirf current month ke dino ke liye chalega)
+  return (
+    <button
+      key={key}
+      type="button"
+      onClick={() => openDialog(key)}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        onDropItem(key);
+      }}
+      className={cn(
+        "group flex min-h-32 min-w-0 flex-col border-b border-r border-border bg-card p-2 text-left transition-colors hover:bg-sage-100/45 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-36",
+        view === "week" && "min-h-[28rem]",
+        draggingId && "bg-sage-100/25",
+      )}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span
+          className={cn(
+            "flex size-7 items-center justify-center rounded-lg text-xs font-semibold",
+            isToday ? "bg-primary text-primary-foreground" : "text-foreground group-hover:bg-card",
+          )}
+        >
+          {day.getDate()}
+        </span>
+        <Plus className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+        {dayItems.map((item) => (
+          <TaskChip
+            key={item.id}
+            item={item}
+            categories={categoryOptions}
+            setDraggingId={setDraggingId}
+            onOpenEdit={() => openEditDialog(item)}
+          />
+        ))}
+      </div>
+    </button>
+  );
+})}
+            {/* {visibleDays.map((day) => {
               const key = dateKey(day);
               const dayItems = sortItems(itemsByDate[key] || []);
               const isToday = key === dateKey(today);
@@ -357,7 +423,7 @@ export function CalendarBoard({ initialItems, categories }: { initialItems: Cale
                   </div>
                 </button>
               );
-            })}
+            })} */}
           </div>
         </CardContent>
       </Card>
@@ -428,127 +494,135 @@ export function CalendarBoard({ initialItems, categories }: { initialItems: Cale
           </CardContent>
         </Card>
       )}
+{dialogOpen && (
+  <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/20 p-4 backdrop-blur-sm sm:items-center">
+    <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-lg border border-border bg-card p-4 shadow-xl">
+      
+      {/* Header (Hamesha top par fixed rahega) */}
+      <div className="flex items-start justify-between gap-3 pb-2">
+        <div>
+          <h2 className="text-base font-semibold">{editingItemId ? "Edit calendar item" : "Create calendar item"}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Selected date: {parseDateKey(selectedDate).toLocaleDateString()}</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-lg h-8"
+          onClick={() => {
+            setDialogOpen(false);
+            setEditingItemId(null);
+          }}
+        >
+          Close
+        </Button>
+      </div>
 
-      {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/20 p-4 backdrop-blur-sm sm:items-center">
-          <div className="w-full max-w-lg rounded-lg border border-border bg-card p-5 shadow-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">{editingItemId ? "Edit calendar item" : "Create calendar item"}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Selected date: {parseDateKey(selectedDate).toLocaleDateString()}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-lg"
-                onClick={() => {
-                  setDialogOpen(false);
-                  setEditingItemId(null);
-                }}
-              >
-                Close
-              </Button>
-            </div>
-
-            <form className="mt-5 space-y-4" onSubmit={onFormSubmit}>
-              <label className="block text-sm font-medium">
-                Task title
-                <input
-                  value={form.title}
-                  onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                  className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
-                  placeholder="Write the next thing to remember"
-                  required
-                />
-              </label>
-              <label className="block text-sm font-medium">
-                Description
-                <textarea
-                  value={form.description}
-                  onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                  className="mt-2 min-h-24 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
-                  placeholder="Add helpful context"
-                />
-              </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-sm font-medium">
-                  Time
-                  <input
-                    type="time"
-                    value={form.scheduledTime}
-                    onChange={(event) => setForm((current) => ({ ...current, scheduledTime: event.target.value }))}
-                    className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
-                  />
-                </label>
-                <label className="block text-sm font-medium">
-                  Type
-                  <select
-                    value={form.itemType}
-                    onChange={(event) => {
-                      const itemType = event.target.value as CalendarItemType;
-                      const nextCategory = categoryOptions.find((category) => category.scope === (itemType === "reminder" ? "reminder" : "calendar"));
-                      setForm((current) => ({ ...current, itemType, category: nextCategory?.name || current.category }));
-                    }}
-                    className="mt-2 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
-                  >
-                    <option value="task">Task</option>
-                    <option value="reminder">Reminder</option>
-                  </select>
-                </label>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Category</p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                  {categoryOptions
-                    .filter((category) => (form.itemType === "reminder" ? category.scope === "reminder" : category.scope === "calendar"))
-                    .map((category) => (
-                      <button
-                        key={`${category.scope}-${category.name}`}
-                        type="button"
-                        onClick={() => setForm((current) => ({ ...current, category: category.name }))}
-                        className={cn(
-                          "flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium transition-colors",
-                          form.category === category.name ? "ring-1 ring-ring" : "opacity-80 hover:opacity-100",
-                        )}
-                        style={{ borderColor: `${category.color}55`, color: category.color }}
-                      >
-                        <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: category.color }} aria-hidden="true" />
-                        <span className="truncate">{category.name}</span>
-                      </button>
-                    ))}
-                </div>
-              </div>
-              {error && <p className="rounded-lg bg-clay-100 px-3 py-2 text-sm text-clay-800">{error}</p>}
-              {editingItem && !editingItem.isDraft && (
-                <div className="flex flex-col gap-2 rounded-lg bg-background p-2 sm:flex-row">
-                  <Button type="button" variant="outline" className="rounded-lg bg-card text-muted-foreground" onClick={moveEditingItemToDraft} disabled={isPending}>
-                    <Inbox className="mr-2 size-4 text-sage-600" aria-hidden="true" />
-                    Move to drafts
-                  </Button>
-                  <Button type="button" variant="outline" className="rounded-lg bg-card text-clay-700" onClick={() => deleteItem(editingItem)} disabled={isPending}>
-                    <Trash2 className="mr-2 size-4" aria-hidden="true" />
-                    Delete
-                  </Button>
-                </div>
-              )}
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                {!editingItemId && (
-                  <Button type="button" variant="outline" className="rounded-lg bg-background" onClick={() => submitItem(true)} disabled={isPending}>
-                    Save draft
-                  </Button>
-                )}
-                <Button type="submit" className="rounded-lg" disabled={isPending}>
-                  {editingItemId ? "Save changes" : "Schedule"}
-                </Button>
-              </div>
-            </form>
+      {/* Form (Agar content bara hoga to form ke andar hi scrollbar aayegi, pura card baahar nahi jayega) */}
+      <form className="mt-2 space-y-3 overflow-y-auto pr-1 custom-scrollbar" onSubmit={onFormSubmit}>
+        <label className="block text-xs font-medium">
+          Task title
+          <input
+            value={form.title}
+            onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+            className="mt-1 h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Write the next thing to remember"
+            required
+          />
+        </label>
+        
+        <label className="block text-xs font-medium">
+          Description
+          <textarea
+            value={form.description}
+            onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+            className="mt-1 min-h-16 w-full resize-none rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+            placeholder="Add helpful context"
+          />
+        </label>
+        
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="block text-xs font-medium">
+            Time
+            <input
+              type="time"
+              value={form.scheduledTime}
+              onChange={(event) => setForm((current) => ({ ...current, scheduledTime: event.target.value }))}
+              className="mt-1 h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+            />
+          </label>
+          <label className="block text-xs font-medium">
+            Type
+            <select
+              value={form.itemType}
+              onChange={(event) => {
+                const itemType = event.target.value as CalendarItemType;
+                const nextCategory = categoryOptions.find((category) => category.scope === (itemType === "reminder" ? "reminder" : "calendar"));
+                setForm((current) => ({ ...current, itemType, category: nextCategory?.name || current.category }));
+              }}
+              className="mt-1 h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="task">Task</option>
+              <option value="reminder">Reminder</option>
+            </select>
+          </label>
+        </div>
+        
+        <div>
+          <p className="text-xs font-medium">Category</p>
+          <div className="mt-1 grid gap-2 sm:grid-cols-3">
+            {categoryOptions
+              .filter((category) => (form.itemType === "reminder" ? category.scope === "reminder" : category.scope === "calendar"))
+              .map((category) => (
+                <button
+                  key={`${category.scope}-${category.name}`}
+                  type="button"
+                  onClick={() => setForm((current) => ({ ...current, category: category.name }))}
+                  className={cn(
+                    "flex h-8 min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium transition-colors",
+                    form.category === category.name ? "ring-1 ring-ring" : "opacity-80 hover:opacity-100",
+                  )}
+                  style={{ borderColor: `${category.color}55`, color: category.color }}
+                >
+                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: category.color }} aria-hidden="true" />
+                  <span className="truncate">{category.name}</span>
+                </button>
+              ))}
+          </div>
+        </div>
+        
+        {error && <p className="rounded-lg bg-clay-100 px-3 py-1.5 text-sm text-clay-800">{error}</p>}
+        
+        {editingItem && !editingItem.isDraft && (
+          <div className="flex flex-col gap-2 rounded-lg bg-background p-1.5 sm:flex-row">
+            <Button type="button" variant="outline" className="rounded-lg bg-card text-muted-foreground h-9 text-xs w-full" onClick={moveEditingItemToDraft} disabled={isPending}>
+              <Inbox className="mr-2 size-3.5 text-sage-600" aria-hidden="true" />
+              Move to drafts
+            </Button>
+            <Button type="button" variant="outline" className="rounded-lg bg-card text-clay-700 h-9 text-xs w-full" onClick={() => deleteItem(editingItem)} disabled={isPending}>
+              <Trash2 className="mr-2 size-3.5" aria-hidden="true" />
+              Delete
+            </Button>
+          </div>
+        )}
+        
+        {/* Buttons section */}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-2 border-t border-border/50">
+          {!editingItemId && (
+            <Button type="button" variant="outline" className="rounded-lg bg-background h-9 text-xs" onClick={() => submitItem(true)} disabled={isPending}>
+              Save draft
+            </Button>
+          )}
+          <Button type="submit" className="rounded-lg h-9 text-xs" disabled={isPending}>
+            {editingItemId ? "Save changes" : "Schedule"}
+          </Button>
+        </div>
+      </form>
           </div>
         </div>
       )}
     </div>
   );
 }
-
 function TaskChip({
   item,
   categories,
