@@ -46,15 +46,25 @@ export async function POST(request: Request) {
   if (!ownedBoard && !sharedBoard) {
     return new Response("Forbidden", { status: 403 });
   }
+// liveblocksId agar null hoga to userId chal parega
+const session = createLiveblocksClient().prepareSession(liveblocksId ?? String(userId), {
 
-  const session = createLiveblocksClient().prepareSession(liveblocksId, {
-    userInfo: {
-      name: name ?? normalizedEmail,
-      email: normalizedEmail,
-      color: getAvatarColor(normalizedEmail),
-      initials: getInitials(name ?? normalizedEmail),
-    },
-  });
+  userInfo: {
+    name: name ?? normalizedEmail,
+    email: normalizedEmail,
+    color: getAvatarColor(normalizedEmail),
+    initials: getInitials(name ?? normalizedEmail),
+  },
+});
+
+  // const session = createLiveblocksClient().prepareSession(liveblocksId, {
+  //   userInfo: {
+  //     name: name ?? normalizedEmail,
+  //     email: normalizedEmail,
+  //     color: getAvatarColor(normalizedEmail),
+  //     initials: getInitials(name ?? normalizedEmail),
+  //   },
+  // });
 
   session.allow(room, session.FULL_ACCESS);
   const response = await session.authorize();

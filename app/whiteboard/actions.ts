@@ -74,8 +74,11 @@ function toDTO(board: typeof whiteboards.$inferSelect): WhiteboardDTO {
   };
 }
 
+// function sortBoards(left: WhiteboardDTO, right: WhiteboardDTO) {
+// // 
+// }
 function sortBoards(left: WhiteboardDTO, right: WhiteboardDTO) {
-// ...
+  return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
 }
 
 async function getCurrentDatabaseUserId() {

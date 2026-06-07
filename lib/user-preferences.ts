@@ -25,11 +25,11 @@ export const categoryScopes = ["calendar", "task", "note", "reminder"] as const;
 export type CategoryScope = (typeof categoryScopes)[number];
 
 export const freePlanLimits = {
-  boards: 3,
-  tasks: 25,
-  notes: 10,
-  spaces: 2,
-  whiteboards: 2,
+  boards: 30,
+  tasks: 35,
+  notes: 20,
+  spaces: 20,
+  whiteboards: 20,
   aiActionsPerDay: 50,
 } as const;
 
