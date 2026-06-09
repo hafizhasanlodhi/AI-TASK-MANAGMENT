@@ -14,12 +14,23 @@ type GeneratedAppPageProps = {
 };
 
 export default async function GeneratedAppPage({ params }: GeneratedAppPageProps) {
-  const user = await currentUser();
+  let user;
+  try {
+    user = await currentUser();
+  } catch (err) {
+    console.error("Clerk auth error in GeneratedAppPage:", err);
+  }
+
   if (!user) {
     redirect("/sign-in");
   }
 
-  await syncCurrentUserToDatabase();
+  try {
+    await syncCurrentUserToDatabase();
+  } catch (err) {
+    console.error("Sync error in GeneratedAppPage:", err);
+  }
+
   const { id } = await params;
   const appId = Number(id);
   if (!Number.isInteger(appId) || appId <= 0) {
@@ -29,9 +40,11 @@ export default async function GeneratedAppPage({ params }: GeneratedAppPageProps
   let app;
   try {
     app = await getGeneratedApp(appId);
-  } catch {
+  } catch (err) {
+    console.error("Failed to fetch app in GeneratedAppPage:", err);
     notFound();
   }
+
 
   return (
     <section className="mx-auto flex w-full max-w-[104rem] flex-col gap-5 px-4 py-6 sm:px-6 lg:px-8">
