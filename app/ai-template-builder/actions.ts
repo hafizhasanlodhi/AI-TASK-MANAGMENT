@@ -12,7 +12,6 @@ import {
 } from "@/lib/user-preferences";
 import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 
-// const GEMINI_MODEL = "gemini-3.1-flash-lite";
 const GEMINI_MODEL = "gemini-1.5-flash";
 const SIDEBAR_LIMIT = 3;
 const allowedIcons = [

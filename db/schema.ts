@@ -226,7 +226,7 @@ export const userSettings = pgTable("user_settings", {
   autoSaveEnabled: boolean("auto_save_enabled").notNull().default(true),
   privacyModeEnabled: boolean("privacy_mode_enabled").notNull().default(false),
   twoFactorReminderDismissed: boolean("two_factor_reminder_dismissed").notNull().default(false),
-  aiModel: text("ai_model").notNull().default("gemini-3.1-flash-lite"),
+  aiModel: text("ai_model").notNull().default("gemini-1.5-flash"),
   aiBehavior: text("ai_behavior").notNull().default("balanced"),
   aiTone: text("ai_tone").notNull().default("Friendly"),
   aiRefineEnabled: boolean("ai_refine_enabled").notNull().default(true),
