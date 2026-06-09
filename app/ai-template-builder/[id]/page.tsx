@@ -9,6 +9,8 @@ import { GeneratedAppPreview } from "@/app/ai-template-builder/generated-app-pre
 import { Button } from "@/components/ui/button";
 import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 
+export const dynamic = "force-dynamic";
+
 type GeneratedAppPageProps = {
   params: Promise<{ id: string }>;
 };
