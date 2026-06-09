@@ -12,7 +12,7 @@ import { createWhiteboard, generateWhiteboardDiagram } from "@/app/whiteboard/ac
 import { calendarItems, db, generatedApps, userSettings, whiteboards } from "@/db";
 import { getCurrentDatabaseUser, recordAiAction } from "@/lib/user-preferences";
 
-const GEMINI_MODEL = "gemini-3.1-flash-lite";
+const GEMINI_MODEL = "gemini-1.5-flash";
 
 export type AssistantMessageInput = {
   role: "user" | "assistant";

@@ -22,7 +22,7 @@ import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 
 const spaceColors = ["violet", "sky", "sage", "amber", "clay", "rose"] as const;
 const pageTemplates = ["Blank Page", "Project Plan", "Meeting Notes", "PRD", "Research Notes", "Task Plan"] as const;
-const GEMINI_MODEL = "gemini-3.1-flash-lite";
+const GEMINI_MODEL = "gemini-1.5-flash";
 
 export type SpaceColor = (typeof spaceColors)[number];
 export type PageTemplate = (typeof pageTemplates)[number];

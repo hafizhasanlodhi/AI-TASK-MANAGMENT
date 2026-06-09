@@ -10,7 +10,7 @@ import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 import { assertAiFeatureEnabled, assertFreePlanLimit, recordAiAction } from "@/lib/user-preferences";
 
 const whiteboardColors = ["sage", "clay", "amber", "sky", "violet"] as const;
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-1.5-flash";
 
 export type WhiteboardColor = (typeof whiteboardColors)[number];
 export type WhiteboardScene = Record<string, unknown>;

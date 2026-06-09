@@ -22,18 +22,18 @@ const STEPS = [
 
 const PLANS = [
   {
-    name: "Free", price: "$0", per: "/mo", desc: "For getting started", highlight: false,
-    items: ["Dashboard, notes & tasks", "Basic calendar planning", "Personal whiteboards", "Limited AI assistant"],
+    name: "Free", price: "$0", per: "/mo", desc: "Everything you need", highlight: true,
+    items: ["Unlimited AI assistant", "AI template builder", "Unlimited notes & boards", "Visual whiteboards", "Calendar planning"],
     cta: "Start for free",
   },
   {
-    name: "Pro", price: "$16", per: "/mo", desc: "For power users", highlight: true,
-    items: ["Unlimited notes & boards", "Advanced AI actions", "AI template builder", "Productivity insights", "Priority history"],
+    name: "Pro", price: "$12", per: "/mo", desc: "For advanced creators", highlight: false,
+    items: ["Priority AI generation", "Advanced insights", "Custom themes", "Priority support", "Extended history"],
     cta: "Upgrade to Pro",
   },
   {
-    name: "Team", price: "$39", per: "/mo", desc: "For collaborative teams", highlight: false,
-    items: ["Shared Kanban spaces", "Live presence & comments", "Team categories", "Admin controls", "Priority support"],
+    name: "Team", price: "$32", per: "/mo", desc: "For collaborative teams", highlight: false,
+    items: ["Shared Kanban spaces", "Live presence & comments", "Team categories", "Admin controls", "Team analytics"],
     cta: "Start team plan",
   },
 ];

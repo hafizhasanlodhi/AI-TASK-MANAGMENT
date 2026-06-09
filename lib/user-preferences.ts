@@ -148,11 +148,11 @@ export async function assertAiFeatureEnabled(feature: "aiRefineEnabled" | "aiTem
 }
 
 export async function recordAiAction() {
-  if (await isCurrentUserPro()) return;
-
   const user = await getCurrentDatabaseUser();
   const today = new Date().toISOString().slice(0, 10);
-  const [usage] = await db
+  
+  // Record usage but don't enforce a limit for Gemini features
+  await db
     .insert(userAiUsage)
     .values({ userId: user.id, usageDate: today, actionCount: 1, updatedAt: new Date() })
     .onConflictDoUpdate({
@@ -163,10 +163,6 @@ export async function recordAiAction() {
       },
     })
     .returning();
-
-  if (usage.actionCount > freePlanLimits.aiActionsPerDay) {
-    throw new Error(`Free plan limit reached: ${freePlanLimits.aiActionsPerDay} AI actions per day. Upgrade to Pro for unlimited AI.`);
-  }
 }
 
 export async function exportCurrentUserData() {
