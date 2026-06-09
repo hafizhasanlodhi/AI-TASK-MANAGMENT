@@ -414,6 +414,18 @@ function parseJsonResponse(text: string) {
 
 function toDTO(app: typeof generatedApps.$inferSelect): GeneratedAppDTO {
   const definition = cleanDefinition(app.definition);
+  const appState = cleanAppState(app.appState);
+
+  // Robust date handling for serialization
+  const createdAt =
+    app.createdAt instanceof Date
+      ? app.createdAt.toISOString()
+      : new Date(app.createdAt).toISOString();
+  const updatedAt =
+    app.updatedAt instanceof Date
+      ? app.updatedAt.toISOString()
+      : new Date(app.updatedAt).toISOString();
+
   return {
     id: app.id,
     appName: app.appName,
@@ -421,11 +433,11 @@ function toDTO(app: typeof generatedApps.$inferSelect): GeneratedAppDTO {
     icon: cleanIcon(app.icon),
     color: cleanColor(app.color),
     layout: app.layout,
-    definition,
-    appState: cleanAppState(app.appState),
+    definition: JSON.parse(JSON.stringify(definition)),
+    appState: JSON.parse(JSON.stringify(appState)),
     isInSidebar: app.isInSidebar,
-    createdAt: app.createdAt.toISOString(),
-    updatedAt: app.updatedAt.toISOString(),
+    createdAt,
+    updatedAt,
   };
 }
 
@@ -451,14 +463,19 @@ async function assertGeneratedAppAccess(appId: number, userId: number) {
   return app;
 }
 
-export async function listGeneratedApps() {
-  const userId = await getCurrentDatabaseUserId();
-  const apps = await db.query.generatedApps.findMany({
-    where: eq(generatedApps.userId, userId),
-    orderBy: [desc(generatedApps.updatedAt), desc(generatedApps.id)],
-  });
+export async function listGeneratedApps(): Promise<GeneratedAppDTO[]> {
+  try {
+    const userId = await getCurrentDatabaseUserId();
+    const apps = await db.query.generatedApps.findMany({
+      where: eq(generatedApps.userId, userId),
+      orderBy: [desc(generatedApps.updatedAt), desc(generatedApps.id)],
+    });
 
-  return apps.map(toDTO);
+    return apps.map(toDTO);
+  } catch (err) {
+    console.error("Error in listGeneratedApps:", err);
+    return [];
+  }
 }
 
 export async function listSidebarGeneratedApps(): Promise<

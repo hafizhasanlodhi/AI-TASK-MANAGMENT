@@ -26,21 +26,28 @@ type AiTemplateBuilderWorkspaceProps = {
   initialApps: GeneratedAppDTO[];
 };
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
+function formatDate(value: string | undefined | null) {
+  if (!value) return "Unknown date";
+  try {
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return "Invalid date";
+    return new Intl.DateTimeFormat("en", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(date);
+  } catch (err) {
+    return "Invalid date";
+  }
 }
 
 export function AiTemplateBuilderWorkspace({
-  initialApps,
+  initialApps = [],
 }: AiTemplateBuilderWorkspaceProps) {
-  const [apps, setApps] = useState(initialApps);
+  const [apps, setApps] = useState(initialApps || []);
   const [prompt, setPrompt] = useState("");
-  const [selectedAppId, setSelectedAppId] = useState(
-    initialApps[0]?.id ?? null,
+  const [selectedAppId, setSelectedAppId] = useState<number | null>(
+    (initialApps && initialApps[0]?.id) ?? null,
   );
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
