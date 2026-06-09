@@ -12,7 +12,8 @@ import {
 } from "@/lib/user-preferences";
 import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 
-const GEMINI_MODEL = "gemini-3.1-flash-lite";
+// const GEMINI_MODEL = "gemini-3.1-flash-lite";
+const GEMINI_MODEL = "gemini-1.5-flash";
 const SIDEBAR_LIMIT = 3;
 const allowedIcons = [
   "Activity",
@@ -505,10 +506,7 @@ export async function getGeneratedApp(appId: number) {
 }
 
 export async function generateGeneratedApp(prompt: string) {
-  // Allow in development mode, require Pro in production
-  if (process.env.NODE_ENV === "production" && !(await isCurrentUserPro())) {
-    throw new Error("AI Template Builder is available on the Pro plan.");
-  }
+  // AI Template Builder is now free for all users
   await assertAiFeatureEnabled("aiTemplateBuilderEnabled");
   await recordAiAction();
   const userId = await getCurrentDatabaseUserId();
