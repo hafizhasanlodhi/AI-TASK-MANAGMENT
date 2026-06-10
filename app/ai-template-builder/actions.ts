@@ -13,7 +13,7 @@ import {
 import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 import { withRetry } from "@/lib/ai-utils";
 
-export const maxDuration = 60; // Allow up to 60 seconds for AI generation
+// export const maxDuration = 60; // Allow up to 60 seconds for AI generation
 
 const GEMINI_MODEL = "gemini-flash-latest";
 const SIDEBAR_LIMIT = 3;

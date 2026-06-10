@@ -13,7 +13,7 @@ import { calendarItems, db, generatedApps, userSettings, whiteboards } from "@/d
 import { getCurrentDatabaseUser, recordAiAction } from "@/lib/user-preferences";
 import { withRetry } from "@/lib/ai-utils";
 
-export const maxDuration = 60; // Allow up to 60 seconds for AI responses
+// export const maxDuration = 60; // Allow up to 60 seconds for AI responses
 
 const GEMINI_MODEL = "gemini-flash-latest";
 
