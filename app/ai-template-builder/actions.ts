@@ -11,8 +11,11 @@ import {
   recordAiAction,
 } from "@/lib/user-preferences";
 import { syncCurrentUserToDatabase } from "@/lib/sync-user";
+import { withRetry } from "@/lib/ai-utils";
 
-const GEMINI_MODEL = "gemini-1.5-flash";
+export const maxDuration = 60; // Allow up to 60 seconds for AI generation
+
+const GEMINI_MODEL = "gemini-flash-latest";
 const SIDEBAR_LIMIT = 3;
 const allowedIcons = [
   "Activity",
@@ -522,40 +525,50 @@ export async function generateGeneratedApp(prompt: string) {
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: [
-      "Return only strict JSON for a single-page mini productivity app/template. No markdown fences or commentary.",
-      'Schema: {"appName":"string","description":"string","icon":"Activity|BadgeDollarSign|BookOpen|CalendarDays|CheckCircle2|ClipboardList|Dumbbell|Flame|GraduationCap|Heart|LayoutTemplate|ListChecks|NotebookPen|PiggyBank|Sparkles|Target|Utensils","color":"#RRGGBB","layout":"single-page","sections":[{"id":"short-id","title":"string","description":"optional string","components":[{"id":"short-id","type":"stats|list|table|form|progress|checklist|buttons|tags|chart","title":"string","description":"optional string","fields":[{"label":"string","type":"text|number|date|select|textarea","placeholder":"optional string"}],"items":[{"label":"string","value":"string","title":"string","meta":"string","status":"string"}],"columns":["string"],"rows":[{"Column":"Value"}],"actions":[{"label":"string","variant":"primary|secondary"}],"value":number,"max":number,"labels":["string"]}]}],"actions":[{"label":"string","variant":"primary|secondary"}],"sampleData":[{}]}',
-      "Use 2 to 4 sections and include a useful mix of stats, list/table/form/progress/checklist/buttons/tags/chart components when appropriate. Keep copy concise and practical.",
-      `User prompt: ${cleanPrompt}`,
-    ].join("\n\n"),
-  });
+  try {
+    const response = await withRetry(() =>
+      ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [
+          "Return only strict JSON for a single-page mini productivity app/template. No markdown fences or commentary.",
+          'Schema: {"appName":"string","description":"string","icon":"Activity|BadgeDollarSign|BookOpen|CalendarDays|CheckCircle2|ClipboardList|Dumbbell|Flame|GraduationCap|Heart|LayoutTemplate|ListChecks|NotebookPen|PiggyBank|Sparkles|Target|Utensils","color":"#RRGGBB","layout":"single-page","sections":[{"id":"short-id","title":"string","description":"optional string","components":[{"id":"short-id","type":"stats|list|table|form|progress|checklist|buttons|tags|chart","title":"string","description":"optional string","fields":[{"label":"string","type":"text|number|date|select|textarea","placeholder":"optional string"}],"items":[{"label":"string","value":"string","title":"string","meta":"string","status":"string"}],"columns":["string"],"rows":[{"Column":"Value"}],"actions":[{"label":"string","variant":"primary|secondary"}],"value":number,"max":number,"labels":["string"]}]}],"actions":[{"label":"string","variant":"primary|secondary"}],"sampleData":[{}]}',
+          "Use 2 to 4 sections and include a useful mix of stats, list/table/form/progress/checklist/buttons/tags/chart components when appropriate. Keep copy concise and practical.",
+          `User prompt: ${cleanPrompt}`,
+        ].join("\n\n"),
+      })
+    );
 
-  const text = response.text?.trim();
-  if (!text) {
-    throw new Error("Gemini did not return a generated app.");
+    const text = response.text?.trim();
+    if (!text) {
+      throw new Error("Gemini did not return a generated app.");
+    }
+
+    const definition = cleanDefinition(parseJsonResponse(text));
+    const now = new Date();
+    const [app] = await db
+      .insert(generatedApps)
+      .values({
+        userId,
+        appName: definition.appName,
+        description: definition.description,
+        icon: definition.icon,
+        color: definition.color,
+        layout: definition.layout,
+        definition,
+        appState: { components: {} },
+        updatedAt: now,
+      })
+      .returning();
+
+    revalidatePath("/ai-template-builder");
+    return toDTO(app);
+  } catch (error: any) {
+    if (error.status === 503 || error.status === 504) {
+      throw new Error("The AI service is currently overloaded. Please wait a minute and try again.");
+    }
+    console.error("Template Builder Error:", error);
+    throw error;
   }
-
-  const definition = cleanDefinition(parseJsonResponse(text));
-  const now = new Date();
-  const [app] = await db
-    .insert(generatedApps)
-    .values({
-      userId,
-      appName: definition.appName,
-      description: definition.description,
-      icon: definition.icon,
-      color: definition.color,
-      layout: definition.layout,
-      definition,
-      appState: { components: {} },
-      updatedAt: now,
-    })
-    .returning();
-
-  revalidatePath("/ai-template-builder");
-  return toDTO(app);
 }
 
 export async function toggleGeneratedAppSidebar(

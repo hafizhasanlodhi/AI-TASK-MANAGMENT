@@ -37,7 +37,7 @@ const defaultCategories: Array<{ scope: CategoryScope; name: string; color: stri
 const themeOptions = ["system", "light", "dark"] as const;
 const calendarViews = ["month", "week"] as const;
 const priorities = ["low", "medium", "high"] as const;
-const aiModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"] as const;
+const aiModels = ["gemini-flash-latest", "gemini-2.0-pro"] as const;
 const aiBehaviors = ["concise", "balanced", "detailed"] as const;
 const aiTones = ["Friendly", "Professional", "Confident", "Casual"] as const;
 
@@ -96,7 +96,7 @@ function toSettingsDTO(settings: typeof userSettings.$inferSelect): UserSettings
     autoSaveEnabled: settings.autoSaveEnabled,
     privacyModeEnabled: settings.privacyModeEnabled,
     twoFactorReminderDismissed: settings.twoFactorReminderDismissed,
-    aiModel: option(settings.aiModel, aiModels, "gemini-1.5-flash"),
+    aiModel: option(settings.aiModel, aiModels, "gemini-flash-latest"),
     aiBehavior: option(settings.aiBehavior, aiBehaviors, "balanced"),
     aiTone: option(settings.aiTone, aiTones, "Friendly"),
     aiRefineEnabled: settings.aiRefineEnabled,
@@ -176,7 +176,7 @@ export async function updateUserSettings(input: UserSettingsInput) {
   if (typeof input.autoSaveEnabled === "boolean") values.autoSaveEnabled = input.autoSaveEnabled;
   if (typeof input.privacyModeEnabled === "boolean") values.privacyModeEnabled = input.privacyModeEnabled;
   if (typeof input.twoFactorReminderDismissed === "boolean") values.twoFactorReminderDismissed = input.twoFactorReminderDismissed;
-  if (typeof input.aiModel === "string") values.aiModel = option(input.aiModel, aiModels, "gemini-1.5-flash");
+  if (typeof input.aiModel === "string") values.aiModel = option(input.aiModel, aiModels, "gemini-flash-latest");
   if (typeof input.aiBehavior === "string") values.aiBehavior = option(input.aiBehavior, aiBehaviors, "balanced");
   if (typeof input.aiTone === "string") values.aiTone = option(input.aiTone, aiTones, "Friendly");
   if (typeof input.aiRefineEnabled === "boolean") values.aiRefineEnabled = input.aiRefineEnabled;

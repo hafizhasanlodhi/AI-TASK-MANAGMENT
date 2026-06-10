@@ -87,6 +87,11 @@ export function AppShell({ generatedSidebarApps = emptyGeneratedSidebarApps, chi
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarApps, setSidebarApps] = useState(generatedSidebarApps);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const refreshSidebarApps = useCallback(() => {
     let cancelled = false;
@@ -326,7 +331,7 @@ export function AppShell({ generatedSidebarApps = emptyGeneratedSidebarApps, chi
               )}
             >
               <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sage-100 text-sage-700">
-                <UserButton />
+                {isMounted ? <UserButton /> : <div className="size-full rounded-lg bg-sage-200 animate-pulse" />}
               </div>
               <div
                 className={cn(

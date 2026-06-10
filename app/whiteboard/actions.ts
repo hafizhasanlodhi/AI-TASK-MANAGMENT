@@ -8,9 +8,10 @@ import { revalidatePath } from "next/cache";
 import { db, users, whiteboards } from "@/db";
 import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 import { assertAiFeatureEnabled, assertFreePlanLimit, recordAiAction } from "@/lib/user-preferences";
+import { withRetry } from "@/lib/ai-utils";
 
 const whiteboardColors = ["sage", "clay", "amber", "sky", "violet"] as const;
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 export type WhiteboardColor = (typeof whiteboardColors)[number];
 export type WhiteboardScene = Record<string, unknown>;
@@ -266,15 +267,17 @@ export async function generateWhiteboardDiagram(prompt: string): Promise<Generat
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: [
-      "Return only strict JSON for a diagram to insert into Excalidraw.",
-      'Schema: {"title":"string","kind":"flowchart|mindmap|architecture|journey|process","nodes":[{"id":"short-id","label":"short text","detail":"optional short detail","group":"optional group"}],"edges":[{"from":"node id","to":"node id","label":"optional short label"}]}',
-      "Use 4 to 10 nodes. Keep labels concise. Edges must reference existing node ids. No markdown fences.",
-      `User prompt: ${cleanPrompt}`,
-    ].join("\n\n"),
-  });
+  const response = await withRetry(() =>
+    ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: [
+        "Return only strict JSON for a diagram to insert into Excalidraw.",
+        'Schema: {"title":"string","kind":"flowchart|mindmap|architecture|journey|process","nodes":[{"id":"short-id","label":"short text","detail":"optional short detail","group":"optional group"}],"edges":[{"from":"node id","to":"node id","label":"optional short label"}]}',
+        "Use 4 to 10 nodes. Keep labels concise. Edges must reference existing node ids. No markdown fences.",
+        `User prompt: ${cleanPrompt}`,
+      ].join("\n\n"),
+    })
+  );
 
   const text = response.text?.trim();
   if (!text) {

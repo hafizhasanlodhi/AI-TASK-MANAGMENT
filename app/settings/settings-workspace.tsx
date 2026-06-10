@@ -388,7 +388,7 @@ export function SettingsWorkspace({ initialData }: { initialData: SettingsPageDa
         {active === "ai" && (
           <SettingsCard title="AI Settings" icon={Bot}>
             <div className="grid gap-4 lg:grid-cols-3">
-              <SelectSetting label="Preferred model" value={settings.aiModel} onChange={(aiModel) => saveSettings({ aiModel })} options={["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"]} />
+              <SelectSetting label="Preferred model" value={settings.aiModel} onChange={(aiModel) => saveSettings({ aiModel })} options={["gemini-flash-latest", "gemini-2.0-pro"]} />
               <SelectSetting label="Default behavior" value={settings.aiBehavior} onChange={(aiBehavior) => saveSettings({ aiBehavior })} options={["concise", "balanced", "detailed"]} />
               <SelectSetting label="Tone / style" value={settings.aiTone} onChange={(aiTone) => saveSettings({ aiTone })} options={["Friendly", "Professional", "Confident", "Casual"]} />
             </div>

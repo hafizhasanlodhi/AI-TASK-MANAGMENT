@@ -10,7 +10,7 @@ import { syncCurrentUserToDatabase } from "@/lib/sync-user";
 
 const noteColors = ["sage", "clay", "amber", "sky", "violet"] as const;
 const noteIcons = ["FileText", "BookOpen", "Lightbulb", "Sparkles", "PenLine"] as const;
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 export type NoteColor = (typeof noteColors)[number];
 export type NoteIcon = (typeof noteIcons)[number];

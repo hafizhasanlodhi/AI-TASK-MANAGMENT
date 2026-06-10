@@ -11,8 +11,11 @@ import { updateUserSettings } from "@/app/settings/actions";
 import { createWhiteboard, generateWhiteboardDiagram } from "@/app/whiteboard/actions";
 import { calendarItems, db, generatedApps, userSettings, whiteboards } from "@/db";
 import { getCurrentDatabaseUser, recordAiAction } from "@/lib/user-preferences";
+import { withRetry } from "@/lib/ai-utils";
 
-const GEMINI_MODEL = "gemini-1.5-flash";
+export const maxDuration = 60; // Allow up to 60 seconds for AI responses
+
+const GEMINI_MODEL = "gemini-flash-latest";
 
 export type AssistantMessageInput = {
   role: "user" | "assistant";
@@ -245,27 +248,48 @@ export async function sendAssistantMessage(messages: AssistantMessageInput[]): P
     .filter((message) => message.content);
 
   const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: [
-      "You are Flowbase AI Assistant, a concise command center for a productivity app.",
-      "Return only strict JSON. Never include markdown fences or commentary outside JSON.",
-      'Schema: {"text":"string","clarification":"optional string","action":{"type":"create_kanban_board|create_kanban_task|create_calendar_item|create_note|update_note_content|create_whiteboard|generate_whiteboard_diagram|generate_template_app|update_settings","title":"string","summary":"string","appArea":"string","requiresConfirmation":true,"payload":{}}}',
-      "Always ask a clarification question instead of proposing a save action when required details are missing. Calendar writes require scheduledDate as YYYY-MM-DD. Calendar time is optional but must be HH:mm when present.",
-      "All persistent actions require confirmation, so action.requiresConfirmation must always be true.",
-      "Use existing ids from the snapshot when targeting a known board, column, or note. For Kanban tasks, choose the Todo column when the request is clear and no column is named.",
-      "For summaries or planning answers, respond in text without an action unless the user explicitly asks to save the result.",
-      `Workspace snapshot JSON:\n${JSON.stringify(snapshot)}`,
-      `Conversation JSON:\n${JSON.stringify(cleanMessages)}`,
-    ].join("\n\n"),
-  });
+  try {
+    const response = await withRetry(() =>
+      ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [
+          "You are Flowbase AI Assistant, a concise command center for a productivity app.",
+          "Return only strict JSON. Never include markdown fences or commentary outside JSON.",
+          'Schema: {"text":"string","clarification":"optional string","action":{"type":"create_kanban_board|create_kanban_task|create_calendar_item|create_note|update_note_content|create_whiteboard|generate_whiteboard_diagram|generate_template_app|update_settings","title":"string","summary":"string","appArea":"string","requiresConfirmation":true,"payload":{}}}',
+          "Always ask a clarification question instead of proposing a save action when required details are missing. Calendar writes require scheduledDate as YYYY-MM-DD. Calendar time is optional but must be HH:mm when present.",
+          "All persistent actions require confirmation, so action.requiresConfirmation must always be true.",
+          "Use existing ids from the snapshot when targeting a known board, column, or note. For Kanban tasks, choose the Todo column when the request is clear and no column is named.",
+          "For summaries or planning answers, respond in text without an action unless the user explicitly asks to save the result.",
+          `Workspace snapshot JSON:\n${JSON.stringify(snapshot)}`,
+          `Conversation JSON:\n${JSON.stringify(cleanMessages)}`,
+        ].join("\n\n"),
+      })
+    );
 
-  const text = response.text?.trim();
-  if (!text) {
-    throw new Error("Gemini did not return an assistant response.");
+    const text = response.text?.trim();
+    if (!text) {
+      throw new Error("Gemini did not return an assistant response.");
+    }
+
+    return cleanAssistantResponse(parseJsonResponse(text));
+  } catch (error: any) {
+    if (error.status === 429) {
+      return {
+        text: "I'm currently out of energy (API quota exceeded). Please wait a minute or check your Gemini API limits in Google AI Studio.",
+        clarification: "You can try again in about 60 seconds. If this persists, ensure your API key has enough quota.",
+      };
+    }
+    
+    if (error.status === 503 || error.status === 504) {
+      return {
+        text: "The AI service is currently experiencing very high demand and couldn't respond even after retrying.",
+        clarification: "Please wait a few seconds and try your request again. This is usually a temporary issue with the Gemini servers.",
+      };
+    }
+
+    console.error("Gemini Assistant Error:", error);
+    throw new Error(error instanceof Error ? error.message : "The AI assistant encountered an error. Please try again.");
   }
-
-  return cleanAssistantResponse(parseJsonResponse(text));
 }
 
 export async function executeAssistantAction(action: AssistantActionProposal): Promise<AssistantExecutionResult> {
